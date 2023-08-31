@@ -1,7 +1,6 @@
-//6:37 https://www.youtube.com/watch?v=w-mxeKctUVg
-
 import React, { useState } from "react";
 import "./App.css";
+import { transformedArray } from "./puzzlesData";
 
 const initial = [
   [-1, 5, -1, 9, -1, -1, -1, -1, -1],
@@ -15,8 +14,12 @@ const initial = [
   [-1, -1, -1, -1, 3, -1, -1, 7, -1],
 ];
 
+console.log(transformedArray);
+console.log(transformedArray[0]);
+
 function App() {
   const [sudokuArr, setSudokuArr] = useState(getDeepCopy(initial));
+  const [puzzleIndex, setPuzzleIndex] = useState(0);
 
   function getDeepCopy(arr) {
     return JSON.parse(JSON.stringify(arr));
@@ -31,50 +34,125 @@ function App() {
       grid[row][col] = val;
     }
     setSudokuArr(grid);
+  }
 
-    function checkSudoku() {
-      //function
-    }
-
-    function checkCol(grid, row, num) {
-      return grid[row].indexOf(num === -1);
-    }
-
-    function checkRow(grid, col, num) {
-      return grid.map((row) => row[col].indexOf(num) === -1);
-    }
-
-    function checkSquare() {
-      let boxArr = [],
-        rowStart = row - (row % 3),
-        colStart = col(col % 3);
-    }
-
-    function checkValid(grid, row, col, num) {
-      //num should be unique in row, col and square 3x3
-      if (checkRow(grid, row, num) && checkCol(grid, col, num) && checkSquare) {
-        return true;
-      }
-    }
-
-    function solver(grid, row = 0, col = 0) {
-      for (let num = 1; num <= 9; num++) {
-        //check is good
-        if (checkValid(grid, row, col, num)) {
-          //fill the num in that cell
+  function compareSudokus(currentSudoku, solvedSudoku) {
+    let res = {
+      isComplete: true,
+      isSolvable: true,
+    };
+    for (var i = 0; i < 9; i++) {
+      for (var j = 0; j < 9; j++) {
+        if (currentSudoku[i][j] !== solvedSudoku[i][j]) {
+          if (currentSudoku[i][j] !== -1) {
+            res.isSolvable = false;
+          }
+          res.isComplete = false;
         }
       }
     }
-    function solveSudoku() {
-      //function
-      let sudoku = getDeepCopy(initial);
-      solver(sudoku);
-    }
+    return res;
+  }
 
-    function resetSudoku() {
-      //function
+  function checkSudoku() {
+    let solvedSudoku = getDeepCopy(initial);
+    solver(solvedSudoku);
+    let compare = compareSudokus(sudokuArr, solvedSudoku);
+    if (compare.isComplete) {
+      alert("Congratulations! You have solved Sudoku!");
+    } else if (compare.isSolvable) {
+      alert("Keep going!");
+    } else {
+      alert("Sudoku can't be solved, try again!");
     }
   }
+
+  function checkRow(grid, row, num) {
+    return grid[row].indexOf(num) === -1;
+  }
+
+  function checkCol(grid, col, num) {
+    return grid.map((row) => row[col]).indexOf(num) === -1;
+  }
+
+  function checkSquare(grid, row, col, num) {
+    let boxArr = [],
+      rowStart = row - (row % 3),
+      colStart = col(col % 3);
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        //get all the cell numnbers and push to boxarr
+        boxArr.push(grid[rowStart + i][colStart + j]);
+      }
+    }
+    return boxArr.indexOf(num) === -1;
+  }
+
+  function checkValid(grid, row, col, num) {
+    //num should be unique in row, col and square 3x3
+    if (checkRow(grid, row, num) && checkCol(grid, col, num) && checkSquare) {
+      return true;
+    }
+  }
+
+  function getNext(row, col) {
+    //if col reaches 8, increase row number
+    //if row reaches 8 and col reaches 8, next will be [0,0]
+    //if col doesnt reach 8, increase col number
+
+    return col !== 8 ? [row, col + 1] : row !== 8 ? [row + 1, 0] : [0, 0];
+  }
+
+  function solver(grid, row = 0, col = 0) {
+    //if the current cell is already filled, move to next cell
+    if (grid[row][col] !== -1) {
+      //for last cell, dont solve it
+      let isLast = row >= 8 && col >= 8;
+      if (!isLast) {
+        let [newRow, newCol] = getNext(row, col);
+        return solver(grid, newRow, newCol);
+      }
+    }
+
+    for (let num = 1; num <= 9; num++) {
+      //check is good
+      if (checkValid(grid, row, col, num)) {
+        //fill the num in that cell
+        grid[row][col] = num;
+        let [newRow, newCol] = getNext(row, col);
+
+        if (!newRow && !newCol) {
+          return true;
+        }
+
+        if (solver(grid, newRow, newCol)) {
+          return true;
+        }
+      }
+    }
+    //if its valid fill with -1
+    grid[row][col] = -1;
+    return false;
+  }
+
+  function solveSudoku() {
+    //function
+    let sudoku = getDeepCopy(sudokuArr);
+    solver(sudoku);
+    setSudokuArr(sudoku);
+  }
+
+  function resetSudoku() {
+    let sudoku = getDeepCopy(initial);
+    setSudokuArr(sudoku);
+  }
+
+  function newSudoku() {
+    const newPuzzleIndex = Math.floor(Math.random() * transformedArray.length);
+    setPuzzleIndex(newPuzzleIndex);
+    setSudokuArr(getDeepCopy(transformedArray[newPuzzleIndex]));
+  }
+
   return (
     <div className="App">
       <div className="App-header">
@@ -101,7 +179,7 @@ function App() {
                               : sudokuArr[row][col]
                           }
                           className="cellInput"
-                          disabled={initial[row][col] !== -1}
+                          disabled={sudokuArr[row][col] !== -1}
                         ></input>
                       </td>
                     );
@@ -112,14 +190,17 @@ function App() {
           </tbody>
         </table>
         <div className="buttonContainer">
-          <button className="checkButton button" onClick="checkSudoku">
+          <button className="checkButton button" onClick={checkSudoku}>
             Check
           </button>
-          <button className="solveButton button" onClick="solveSudoku">
+          <button className="solveButton button" onClick={solveSudoku}>
             Solve
           </button>
-          <button className="resetButton button" onClick="resetSudoku">
+          <button className="resetButton button" onClick={resetSudoku}>
             Reset
+          </button>
+          <button className="newButton button" onClick={newSudoku}>
+            New Game
           </button>
         </div>
       </div>

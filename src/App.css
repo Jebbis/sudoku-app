@@ -45,6 +45,9 @@ td {
 .resetButton {
   background-color: aqua;
 }
+.newButton {
+  background-color: deeppink;
+}
 
 .button {
   font-weight: bold;
