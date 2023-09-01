@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import { transformedArray } from "./puzzlesData";
 
@@ -14,12 +14,13 @@ const initial = [
   [-1, -1, -1, -1, 3, -1, -1, 7, -1],
 ];
 
-console.log(transformedArray);
-console.log(transformedArray[0]);
-
 function App() {
   const [sudokuArr, setSudokuArr] = useState(getDeepCopy(initial));
+  const [startingArr, setStartingArr] = useState(getDeepCopy(initial));
   const [puzzleIndex, setPuzzleIndex] = useState(0);
+
+  /*   console.log(startingArr);
+  console.log(sudokuArr); */
 
   function getDeepCopy(arr) {
     return JSON.parse(JSON.stringify(arr));
@@ -37,12 +38,20 @@ function App() {
   }
 
   function compareSudokus(currentSudoku, solvedSudoku) {
+    console.log(`solved: ${solvedSudoku}`);
+    console.log(`now: ${currentSudoku}`);
     let res = {
       isComplete: true,
       isSolvable: true,
     };
     for (var i = 0; i < 9; i++) {
       for (var j = 0; j < 9; j++) {
+        /*                  console.log(`Current: ${currentSudoku[i][j]}`);
+        console.log(`Solved: ${solvedSudoku[i][j]}`); */
+        console.log(`isComplete: ${res.isComplete}`);
+        /*         console.log(`isSolvable: ${res.isSolvable}`);
+        console.log(`solved: ${solvedSudoku}`);
+        console.log(`now: ${currentSudoku}`);  */
         if (currentSudoku[i][j] !== solvedSudoku[i][j]) {
           if (currentSudoku[i][j] !== -1) {
             res.isSolvable = false;
@@ -55,8 +64,10 @@ function App() {
   }
 
   function checkSudoku() {
-    let solvedSudoku = getDeepCopy(initial);
+    let solvedSudoku = getDeepCopy(startingArr);
+    console.log(`before solver${solvedSudoku}`);
     solver(solvedSudoku);
+    console.log(`after solver${solvedSudoku}`);
     let compare = compareSudokus(sudokuArr, solvedSudoku);
     if (compare.isComplete) {
       alert("Congratulations! You have solved Sudoku!");
@@ -78,7 +89,7 @@ function App() {
   function checkSquare(grid, row, col, num) {
     let boxArr = [],
       rowStart = row - (row % 3),
-      colStart = col(col % 3);
+      colStart = col - (col % 3);
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
         //get all the cell numnbers and push to boxarr
@@ -90,17 +101,21 @@ function App() {
 
   function checkValid(grid, row, col, num) {
     //num should be unique in row, col and square 3x3
-    if (checkRow(grid, row, num) && checkCol(grid, col, num) && checkSquare) {
+    if (
+      checkRow(grid, row, num) &&
+      checkCol(grid, col, num) &&
+      checkSquare(grid, row, col, num)
+    ) {
       return true;
     }
   }
 
   function getNext(row, col) {
     //if col reaches 8, increase row number
-    //if row reaches 8 and col reaches 8, next will be [0,0]
+    //if row reaches 8 and col reaches 8, next will be [null,null]
     //if col doesnt reach 8, increase col number
 
-    return col !== 8 ? [row, col + 1] : row !== 8 ? [row + 1, 0] : [0, 0];
+    return col !== 8 ? [row, col + 1] : row !== 8 ? [row + 1, 0] : [null, null];
   }
 
   function solver(grid, row = 0, col = 0) {
@@ -121,7 +136,7 @@ function App() {
         grid[row][col] = num;
         let [newRow, newCol] = getNext(row, col);
 
-        if (!newRow && !newCol) {
+        if (newRow === null || newCol === null) {
           return true;
         }
 
@@ -136,9 +151,9 @@ function App() {
   }
 
   function solveSudoku() {
-    //function
     let sudoku = getDeepCopy(sudokuArr);
     solver(sudoku);
+    console.log(sudoku);
     setSudokuArr(sudoku);
   }
 
@@ -152,6 +167,10 @@ function App() {
     setPuzzleIndex(newPuzzleIndex);
     setSudokuArr(getDeepCopy(transformedArray[newPuzzleIndex]));
   }
+
+  useEffect(() => {
+    setStartingArr(sudokuArr);
+  }, [sudokuArr]);
 
   return (
     <div className="App">
